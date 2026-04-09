@@ -1,0 +1,110 @@
+<a routerLink="/" class="back-link">{{ i18n.t().backToResources }}</a>
+
+<div class="session-bar">
+  {{ i18n.t().sessionId }}: <strong>{{ userId }}</strong>
+</div>
+
+<div *ngIf="loading" class="state-loading">{{ i18n.t().loadingSlots }}</div>
+<div *ngIf="error" class="state-error">{{ error }}</div>
+
+<div *ngIf="!loading && !error">
+
+  <p class="slots-section-label">{{ i18n.t().slotsLabel }}</p>
+
+  <div class="slots-grid">
+    <button
+      *ngFor="let slot of slots"
+      [class]="slotClass(slot)"
+      [disabled]="!slot.isAvailable || !!activeReservation"
+      (click)="hold(slot.id)"
+    >
+      <span class="slot-number">{{ slot.slotNumber }}</span>
+      <span class="slot-status">
+        <ng-container *ngIf="slot.isAvailable">
+          {{ i18n.t().slotFree }}
+        </ng-container>
+        <ng-container *ngIf="!slot.isAvailable && slot.activeReservation?.status === 'Held' && slot.activeReservation?.userId !== userId">
+          {{ i18n.t().slotHeld }}
+        </ng-container>
+        <ng-container *ngIf="!slot.isAvailable && slot.activeReservation?.userId === userId && slot.activeReservation?.status === 'Held'">
+          {{ i18n.t().slotYours }}
+        </ng-container>
+        <ng-container *ngIf="!slot.isAvailable && slot.activeReservation?.status === 'Confirmed'">
+          {{ i18n.t().slotDone }}
+        </ng-container>
+      </span>
+    </button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <span class="legend-dot available"></span>
+      {{ i18n.t().legendAvailable }}
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot held"></span>
+      {{ i18n.t().legendHeldByOthers }}
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot held-mine"></span>
+      {{ i18n.t().legendYourHold }}
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot confirmed"></span>
+      {{ i18n.t().legendConfirmed }}
+    </div>
+  </div>
+
+  <!-- Reservation panel -->
+  <div class="reservation-panel" *ngIf="activeReservation">
+    <p class="panel-label">{{ i18n.t().activeReservation }}</p>
+
+    <div class="panel-slot-info">
+      <span class="panel-slot-number">#{{ activeReservation.slotNumber }}</span>
+      <div class="panel-slot-meta">
+        <span class="panel-resource-name">{{ activeReservation.resourceName }}</span>
+        <span class="panel-status-chip" [class]="activeReservation.status.toLowerCase()">
+          {{ activeReservation.status }}
+        </span>
+      </div>
+    </div>
+
+    <div class="countdown-block"
+      *ngIf="remainingSeconds > 0 && activeReservation.status === 'Held'">
+      <span class="countdown-label">{{ i18n.t().timeRemaining }}</span>
+      <span class="countdown-timer" [class.urgent]="remainingSeconds < 60">
+        {{ formatTime(remainingSeconds) }}
+      </span>
+    </div>
+
+    <div class="panel-actions" *ngIf="activeReservation.status === 'Held'">
+      <button
+        class="btn btn-confirm"
+        (click)="confirm()"
+        [disabled]="actionLoading"
+      >
+        {{ i18n.t().confirmReservation }}
+      </button>
+      <button
+        class="btn btn-cancel"
+        (click)="cancelReservation()"
+        [disabled]="actionLoading"
+      >
+        {{ i18n.t().release }}
+      </button>
+    </div>
+
+    <div class="confirmed-state" *ngIf="activeReservation.status === 'Confirmed'">
+      <span class="confirmed-icon">✓</span>
+      {{ i18n.t().slotConfirmedMsg.replace('{n}', activeReservation.slotNumber.toString()) }}
+    </div>
+  </div>
+
+  <div class="feedback success" *ngIf="actionMessage && !activeReservation">
+    {{ actionMessage }}
+  </div>
+  <div class="feedback error" *ngIf="actionError">
+    {{ actionError }}
+  </div>
+
+</div>
